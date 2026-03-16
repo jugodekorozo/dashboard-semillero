@@ -935,3 +935,156 @@ tr:hover td { background: rgba(255, 255, 255, 0.04); }
   .tb-grid { grid-template-columns: 1fr; }
   .tb-trigger-row { flex-direction: column; align-items: flex-start; }
 }
+
+/* ── Buscador de estudiantes ───────────────────────────────────────── */
+
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 220px;
+  max-width: 480px;
+  background: var(--surface-strong);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 9px 14px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.search-input::placeholder { color: var(--muted); }
+.search-input:focus { border-color: var(--accent); }
+
+.search-count {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ── Sorting de tabla ──────────────────────────────────────────────── */
+
+.th-sort {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+
+.th-sort:hover { color: var(--accent); }
+
+.th-sort.th-active { color: var(--accent); }
+
+.sort-arrow {
+  font-size: 10px;
+  opacity: 0.6;
+  margin-left: 3px;
+}
+
+.th-active .sort-arrow { opacity: 1; }
+
+/* Score badge en primera columna */
+.score-badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--accent);
+  background: rgba(110, 180, 44, 0.1);
+  border: 1px solid rgba(110, 180, 44, 0.2);
+  border-radius: 6px;
+  padding: 2px 7px;
+  min-width: 28px;
+  text-align: center;
+}
+
+/* Skills count en última columna */
+.skills-count {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  background: rgba(255,255,255,0.06);
+  border-radius: 6px;
+  padding: 2px 8px;
+  text-align: center;
+}
+
+/* ── Top habilidades e intereses ───────────────────────────────────── */
+
+.top-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.top-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.top-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  width: 170px;
+  min-width: 170px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.top-bar-wrap {
+  flex: 1;
+  height: 6px;
+  background: rgba(255,255,255,0.07);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.top-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #8dd44b);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.top-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  min-width: 20px;
+  text-align: right;
+}
+
+.top-scarce {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.top-scarce-label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--accent-3);
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .top-label { width: 120px; min-width: 120px; }
+  .search-input { max-width: 100%; }
+}

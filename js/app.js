@@ -2,6 +2,11 @@
   const { RAW, PALETTE } = window.DashboardData;
   let filtered = [...RAW];
 
+  // Estado de búsqueda y sorting (persiste entre cambios de filtro)
+  let _searchQuery = '';
+  let _sortKey     = null;   // null = sin ordenar
+  let _sortDir     = 'desc';
+
   function pct(n, total) {
     if (!total) return "0%";
     return Math.round((n / total) * 100) + "%";
@@ -9,24 +14,37 @@
 
   function updateKPIs(data) {
     const n = data.length;
+    const A = window.DashboardAnalytics;
+
     document.getElementById("k-total").textContent = n;
     document.getElementById("total-badge").textContent = n;
-
-    const exp = data.filter((d) => d.previous === "Sí").length;
-    document.getElementById("k-exp").textContent = exp;
-    document.getElementById("k-exp-pct").textContent = pct(exp, n);
-
-    const yes = data.filter((d) => d.willing === "Sí").length;
-    document.getElementById("k-yes").textContent = yes;
-    document.getElementById("k-yes-pct").textContent = pct(yes, n);
-
-    const m3 = data.filter((d) => d.time === "Más de 3 horas").length;
-    document.getElementById("k-more3").textContent = m3;
-    document.getElementById("k-more3-pct").textContent = pct(m3, n);
-
-    document.getElementById("k-grad").textContent = data.filter((d) => d.semester === "Egresado").length;
-    document.getElementById("k-sem8").textContent = data.filter((d) => d.semester === "8").length;
     document.getElementById("result-count").textContent = `Mostrando ${n} de ${RAW.length} inscritos`;
+
+    if (!A) return;  // analytics.js aún no cargó (primera ejecución de app.js)
+
+    // Núcleo activo: willing=Sí y time >= 2h
+    const active = A.getActiveCore(data).length;
+    document.getElementById("k-active").textContent = active;
+    document.getElementById("k-active-pct").textContent = pct(active, n) + " dispuestos y disponibles";
+
+    // Núcleo estratégico: experiencia + willing=Sí + time >= 3h
+    const strategic = A.getStrategicCore(data).length;
+    document.getElementById("k-strategic").textContent = strategic;
+    document.getElementById("k-strategic-pct").textContent = pct(strategic, n) + " listos para liderar";
+
+    // Riesgo de rotación: sem 8 + egresados
+    const rotation = A.getRotationRisk(data);
+    document.getElementById("k-rotation").textContent = rotation.count;
+    document.getElementById("k-rotation-pct").textContent = rotation.pct + "% próximos a graduarse";
+
+    // Diversidad de habilidades: skills únicas
+    const diversity = A.getSkillDiversity(data);
+    document.getElementById("k-diversity").textContent = diversity;
+
+    // Potencial editorial: escritura + diseño editorial + experiencia previa
+    const editorial = A.getEditorialPotential(data).length;
+    document.getElementById("k-editorial").textContent = editorial;
+    document.getElementById("k-editorial-pct").textContent = pct(editorial, n) + " con perfil completo";
   }
 
   function pillClass(val) {
@@ -37,11 +55,14 @@
 
   function updateTable(data) {
     const tbody = document.getElementById("tbl-body");
+    const A = window.DashboardAnalytics;
     tbody.innerHTML = data
       .map(
-        (d, i) => `
+        (d) => {
+          const score = A ? A.profileScore(d) : "—";
+          return `
     <tr>
-      <td style="color:var(--muted)">${i + 1}</td>
+      <td><span class="score-badge">${score}</span></td>
       <td style="font-weight:600">${d.name}</td>
       <td><span class="pill">${d.semester === "Egresado" ? "Egres." : "Sem. " + d.semester}</span></td>
       <td>${d.lines
@@ -58,7 +79,9 @@
       <td>${d.topics
         .map((t) => `<span class="pill pill-topic">${t}</span>`)
         .join("")}</td>
-    </tr>`
+      <td><span class="skills-count">${d.skills.length}</span></td>
+    </tr>`;
+        }
       )
       .join("");
   }
@@ -101,6 +124,24 @@
     });
   }
 
+  function _updateSearchCount(shown, total) {
+    const el = document.getElementById("search-count");
+    if (!el) return;
+    el.textContent = _searchQuery
+      ? shown + " resultado" + (shown !== 1 ? "s" : "") + " de " + total
+      : "";
+  }
+
+  function _updateSortHeaders() {
+    ["score", "semester", "time", "skills"].forEach((key) => {
+      const el = document.getElementById("th-" + key);
+      if (!el) return;
+      const arrow = el.querySelector(".sort-arrow");
+      if (arrow) arrow.textContent = _sortKey === key ? (_sortDir === "asc" ? "↑" : "↓") : "↕";
+      el.classList.toggle("th-active", _sortKey === key);
+    });
+  }
+
   function applyFilters() {
     const sem = document.getElementById("f-semester").value;
     const line = document.getElementById("f-line").value;
@@ -117,9 +158,16 @@
         (!will || d.willing === will)
     );
 
+    // Búsqueda y sorting se aplican solo a la tabla; KPIs y gráficos usan filtered completo
+    const A = window.DashboardAnalytics;
+    const searched = (_searchQuery && A) ? A.searchStudents(filtered, _searchQuery) : filtered;
+    const display  = (_sortKey && A)     ? A.sortStudents(searched, _sortKey, _sortDir)  : searched;
+
     updateKPIs(filtered);
     window.DashboardCharts.updateCharts(filtered, PALETTE, filtered.length);
-    updateTable(filtered);
+    updateTable(display);
+    _updateSearchCount(searched.length, filtered.length);
+    _updateSortHeaders();
     if (window.DashboardModules) window.DashboardModules.updateAll(filtered);
   }
 
@@ -132,6 +180,21 @@
 
   window.applyFilters = applyFilters;
   window.resetFilters = resetFilters;
+
+  window._sortTable = function (key) {
+    if (_sortKey === key) {
+      _sortDir = _sortDir === "desc" ? "asc" : "desc";
+    } else {
+      _sortKey = key;
+      _sortDir = "desc";
+    }
+    applyFilters();
+  };
+
+  window._onSearchInput = function (val) {
+    _searchQuery = val;
+    applyFilters();
+  };
 
   Chart.defaults.color = "#a8a8a8";
   Chart.defaults.borderColor = "rgba(255,255,255,0.08)";

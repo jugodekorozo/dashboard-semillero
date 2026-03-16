@@ -92,6 +92,14 @@
     }, {});
   }
 
+  // Núcleo activo: dispuesto a participar (willing=Sí) y tiempo >= 2h.
+  function getActiveCore(data) {
+    return data.filter(function (d) {
+      return d.willing === 'Sí' &&
+             (d.time === '2 Horas' || d.time === '3 Horas' || d.time === 'Más de 3 horas');
+    });
+  }
+
   // Núcleo estratégico: experiencia + disposición total + >=3h.
   function getStrategicCore(data) {
     return data.filter(function (d) {
@@ -101,10 +109,33 @@
     });
   }
 
-  // Potencial editorial: escritura + diseño editorial.
+  // Riesgo de rotación: inscritos en semestre 8 o egresados.
+  // Devuelve { count, pct } sobre el total del subset filtrado.
+  function getRotationRisk(data) {
+    var n = data.length;
+    if (!n) return { count: 0, pct: 0 };
+    var semDist = getSemesterDistribution(data);
+    var count = (semDist['8'] || 0) + (semDist['Egresado'] || 0);
+    return { count: count, pct: Math.round(count / n * 100) };
+  }
+
+  // Diversidad de habilidades: número de skills únicas en el subset.
+  function getSkillDiversity(data) {
+    return Object.keys(skillFrequency(data)).length;
+  }
+
+  // Alta disponibilidad: time = "3 Horas" o "Más de 3 horas".
+  function getHighAvailability(data) {
+    return data.filter(function (d) {
+      return d.time === '3 Horas' || d.time === 'Más de 3 horas';
+    });
+  }
+
+  // Potencial editorial: escritura + diseño editorial + experiencia previa.
   function getEditorialPotential(data) {
     return data.filter(function (d) {
-      return d.skills.indexOf('Escritura / Redacción') !== -1 &&
+      return d.previous === 'Sí' &&
+             d.skills.indexOf('Escritura / Redacción') !== -1 &&
              d.skills.indexOf('Diseño editorial') !== -1;
     });
   }
@@ -195,6 +226,43 @@
         return b.score - a.score;
       })
       .slice(0, size);
+  }
+
+  // Filtra estudiantes cuyo nombre, skills o topics contienen la query.
+  function searchStudents(data, query) {
+    if (!query || !query.trim()) return data;
+    var q = query.toLowerCase().trim();
+    return data.filter(function (d) {
+      return d.name.toLowerCase().indexOf(q) !== -1 ||
+             d.skills.some(function (s) { return s.toLowerCase().indexOf(q) !== -1; }) ||
+             d.topics.some(function (t) { return t.toLowerCase().indexOf(q) !== -1; });
+    });
+  }
+
+  // Ordena una copia del array por la clave dada.
+  // key: 'score' | 'semester' | 'time' | 'skills'
+  // direction: 'asc' | 'desc'
+  var _semOrder  = { '1':1,'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'Egresado':9 };
+  var _timeOrder = { '1 Hora':1,'2 Horas':2,'3 Horas':3,'Más de 3 horas':4 };
+
+  function sortStudents(data, key, direction) {
+    if (!key) return data;
+    return data.slice().sort(function (a, b) {
+      var va, vb;
+      if      (key === 'score')    { va = profileScore(a);        vb = profileScore(b); }
+      else if (key === 'semester') { va = _semOrder[a.semester]  || 0; vb = _semOrder[b.semester]  || 0; }
+      else if (key === 'time')     { va = _timeOrder[a.time]     || 0; vb = _timeOrder[b.time]     || 0; }
+      else if (key === 'skills')   { va = a.skills.length;        vb = b.skills.length; }
+      else return 0;
+      return direction === 'asc' ? va - vb : vb - va;
+    });
+  }
+
+  // Habilidades escasas (count ≤ 3): [{ name, count }], ordenadas asc, límite configurable.
+  function getScarceSkills(data, limit) {
+    return rareSkills(data, 3)
+      .slice(0, normalizeLimit(limit, 5))
+      .map(function (e) { return { name: e[0], count: e[1] }; });
   }
 
   // Array de [skill, count] donde count <= threshold, ordenado asc por count.
@@ -325,8 +393,15 @@
     getTopInterests:     getTopInterests,
     getMostAvailableStudents: getMostAvailableStudents,
     getSemesterDistribution:  getSemesterDistribution,
+    getActiveCore:       getActiveCore,
     getStrategicCore:    getStrategicCore,
-    getEditorialPotential:getEditorialPotential,
+    getRotationRisk:     getRotationRisk,
+    getSkillDiversity:   getSkillDiversity,
+    getHighAvailability: getHighAvailability,
+    getEditorialPotential: getEditorialPotential,
+    searchStudents:      searchStudents,
+    sortStudents:        sortStudents,
+    getScarceSkills:     getScarceSkills,
     rareSkills:          rareSkills,
     generateInsights:    generateInsights,
     PROJECT_TEMPLATES:   PROJECT_TEMPLATES,

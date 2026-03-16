@@ -236,12 +236,67 @@
     renderTeamResults(containerId);
   }
 
+  // ── TOP HABILIDADES E INTERESES ─────────────────────────────────────
+
+  // Renderiza una lista compacta de top-N ítems con barra proporcional.
+  // items: [{ name, count }]   scarce (opcional): [{ name, count }] para badge de escasas
+  function renderTopList(containerId, title, items, scarce) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (!items.length) {
+      container.innerHTML = '<div class="card-title">' + title + '</div><div class="mod-empty">Sin datos.</div>';
+      return;
+    }
+
+    var max = items[0].count;
+    var rows = items.map(function (item) {
+      var pct = max > 0 ? Math.round(item.count / max * 100) : 0;
+      return '<div class="top-row">' +
+        '<span class="top-label">' + item.name + '</span>' +
+        '<div class="top-bar-wrap">' +
+          '<div class="top-bar-fill" style="width:' + pct + '%"></div>' +
+        '</div>' +
+        '<span class="top-count">' + item.count + '</span>' +
+      '</div>';
+    }).join('');
+
+    var scarceHtml = '';
+    if (scarce && scarce.length) {
+      scarceHtml =
+        '<div class="top-scarce">' +
+          '<span class="top-scarce-label">Escasas</span>' +
+          scarce.map(function (s) {
+            return '<span class="rare-badge">' + s.name + ' (' + s.count + ')</span>';
+          }).join('') +
+        '</div>';
+    }
+
+    container.innerHTML =
+      '<div class="card-title">' + title + '</div>' +
+      '<div class="top-list">' + rows + '</div>' +
+      scarceHtml;
+  }
+
+  function renderTopSkills(containerId, data) {
+    var items  = window.DashboardAnalytics.getTopSkills(data, 5);
+    var scarce = window.DashboardAnalytics.getScarceSkills(data, 5);
+    renderTopList(containerId, 'Top 5 habilidades', items, scarce);
+  }
+
+  function renderTopInterests(containerId, data) {
+    var items = window.DashboardAnalytics.getTopInterests(data, 5);
+    renderTopList(containerId, 'Top 5 intereses', items, null);
+  }
+
   // ── API PÚBLICA ─────────────────────────────────────────────────────
 
   function updateAll(data) {
     renderInsights('mod-insights', data);
     renderProfileRanking('mod-ranking', data);
     renderSkillMap('mod-skills', data);
+    renderTopSkills('mod-top-skills', data);
+    renderTopInterests('mod-top-interests', data);
     if (window.TeamBuilder) window.TeamBuilder.setData(data);
   }
 

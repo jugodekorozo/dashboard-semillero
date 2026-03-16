@@ -65,14 +65,38 @@
 </div>
 
 <div class="main">
-  <!-- KPIs -->
+  <!-- KPIs estratégicos -->
   <div class="kpi-grid">
-    <div class="kpi"><div class="kpi-val c1" id="k-total">53</div><div class="kpi-lbl">Total inscritos</div></div>
-    <div class="kpi"><div class="kpi-val c2" id="k-exp">—</div><div class="kpi-lbl">Con experiencia previa</div><div class="kpi-sub" id="k-exp-pct"></div></div>
-    <div class="kpi"><div class="kpi-val c3" id="k-yes">—</div><div class="kpi-lbl">Dispuestos a participar</div><div class="kpi-sub" id="k-yes-pct"></div></div>
-    <div class="kpi"><div class="kpi-val c4" id="k-more3">—</div><div class="kpi-lbl">+3 horas/semana</div><div class="kpi-sub" id="k-more3-pct"></div></div>
-    <div class="kpi"><div class="kpi-val c5" id="k-grad">—</div><div class="kpi-lbl">Egresados</div></div>
-    <div class="kpi"><div class="kpi-val c6" id="k-sem8">—</div><div class="kpi-lbl">Semestre 8</div><div class="kpi-sub">(próximos a grado)</div></div>
+    <div class="kpi">
+      <div class="kpi-val c1" id="k-total">—</div>
+      <div class="kpi-lbl">Total inscritos</div>
+      <div class="kpi-sub">en filtro actual</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val c3" id="k-active">—</div>
+      <div class="kpi-lbl">Núcleo activo</div>
+      <div class="kpi-sub" id="k-active-pct">willing + ≥2h/sem</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val c6" id="k-strategic">—</div>
+      <div class="kpi-lbl">Núcleo estratégico</div>
+      <div class="kpi-sub" id="k-strategic-pct">exp. + willing + ≥3h</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val c2" id="k-rotation">—</div>
+      <div class="kpi-lbl">Riesgo de rotación</div>
+      <div class="kpi-sub" id="k-rotation-pct">sem 8 + egresados</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val c5" id="k-diversity">—</div>
+      <div class="kpi-lbl">Diversidad de habilidades</div>
+      <div class="kpi-sub">habilidades únicas activas</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val c4" id="k-editorial">—</div>
+      <div class="kpi-lbl">Potencial editorial</div>
+      <div class="kpi-sub" id="k-editorial-pct">escritura + diseño + exp.</div>
+    </div>
   </div>
 
   <!-- Row 1: 3 charts -->
@@ -128,6 +152,12 @@
     <div class="card" id="mod-skills"></div>
   </div>
 
+  <!-- Exploración: top habilidades e intereses -->
+  <div class="chart-grid-2">
+    <div class="card" id="mod-top-skills"></div>
+    <div class="card" id="mod-top-interests"></div>
+  </div>
+
   <!-- Constructor de equipos (opcional) -->
   <div class="tb-trigger-row">
     <button id="team-builder-toggle" class="tb-toggle-btn" onclick="window.TeamBuilder && window.TeamBuilder.togglePanel()">⚡ Sugerir equipos</button>
@@ -137,19 +167,26 @@
 
   <!-- Table -->
   <div class="section-title">Detalle de inscritos</div>
+  <div class="table-toolbar">
+    <input type="text" id="student-search" class="search-input"
+      placeholder="Buscar por nombre, habilidad o interés…"
+      oninput="window._onSearchInput(this.value)">
+    <span id="search-count" class="search-count"></span>
+  </div>
   <div class="card-table">
     <div class="table-wrap">
       <table id="tbl">
         <thead>
           <tr>
-            <th>#</th>
+            <th id="th-score" class="th-sort" onclick="window._sortTable('score')" title="Ordenar por score de disponibilidad">Score <span class="sort-arrow">↕</span></th>
             <th>Nombre</th>
-            <th>Semestre</th>
+            <th id="th-semester" class="th-sort" onclick="window._sortTable('semester')" title="Ordenar por semestre">Semestre <span class="sort-arrow">↕</span></th>
             <th>Líneas</th>
-            <th>Tiempo</th>
+            <th id="th-time" class="th-sort" onclick="window._sortTable('time')" title="Ordenar por disponibilidad">Tiempo <span class="sort-arrow">↕</span></th>
             <th>Eventos</th>
             <th>Experiencia</th>
             <th>Temas</th>
+            <th id="th-skills" class="th-sort" onclick="window._sortTable('skills')" title="Ordenar por nº habilidades">Skills <span class="sort-arrow">↕</span></th>
           </tr>
         </thead>
         <tbody id="tbl-body"></tbody>
