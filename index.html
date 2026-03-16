@@ -27,25 +27,25 @@
 <div class="filters">
   <div>
     <label>Semestre</label>
-    <select id="f-semester" onchange="applyFilters()">
+    <select id="f-semester">
       <option value="">Todos</option>
     </select>
   </div>
   <div>
     <label>Línea de énfasis</label>
-    <select id="f-line" onchange="applyFilters()">
+    <select id="f-line">
       <option value="">Todas</option>
     </select>
   </div>
   <div>
     <label>Tiempo disponible</label>
-    <select id="f-time" onchange="applyFilters()">
+    <select id="f-time">
       <option value="">Todos</option>
     </select>
   </div>
   <div>
     <label>Experiencia previa</label>
-    <select id="f-prev" onchange="applyFilters()">
+    <select id="f-prev">
       <option value="">Todos</option>
       <option value="Sí">Con experiencia</option>
       <option value="No">Sin experiencia</option>
@@ -53,14 +53,14 @@
   </div>
   <div>
     <label>Participación eventos</label>
-    <select id="f-willing" onchange="applyFilters()">
+    <select id="f-willing">
       <option value="">Todos</option>
       <option value="Sí">Sí</option>
       <option value="No">No</option>
       <option value="Tal vez">Tal vez</option>
     </select>
   </div>
-  <button class="btn-reset" onclick="resetFilters()">↺ Limpiar filtros</button>
+  <button id="btn-reset" class="btn-reset">↺ Limpiar filtros</button>
   <span id="result-count"></span>
 </div>
 
@@ -164,7 +164,7 @@
 
   <!-- Constructor de equipos (opcional) -->
   <div class="tb-trigger-row">
-    <button id="team-builder-toggle" class="tb-toggle-btn" onclick="window.TeamBuilder && window.TeamBuilder.togglePanel()">⚡ Sugerir equipos</button>
+    <button id="team-builder-toggle" class="tb-toggle-btn">⚡ Sugerir equipos</button>
     <span class="tb-trigger-hint">Divide los inscritos filtrados en equipos balanceados</span>
   </div>
   <div id="team-builder-panel" class="tb-panel"></div>
@@ -173,8 +173,7 @@
   <div class="section-title">Detalle de inscritos</div>
   <div class="table-toolbar">
     <input type="text" id="student-search" class="search-input"
-      placeholder="Buscar por nombre, habilidad o interés…"
-      oninput="window._onSearchInput(this.value)">
+      placeholder="Buscar por nombre, habilidad o interés…">
     <span id="search-count" class="search-count"></span>
   </div>
   <div class="card-table">
@@ -182,15 +181,15 @@
       <table id="tbl">
         <thead>
           <tr>
-            <th id="th-score" class="th-sort" onclick="window._sortTable('score')" title="Ordenar por score de disponibilidad">Score <span class="sort-arrow">↕</span></th>
+            <th id="th-score" class="th-sort" data-sort="score" title="Ordenar por score de disponibilidad">Score <span class="sort-arrow">↕</span></th>
             <th>Nombre</th>
-            <th id="th-semester" class="th-sort" onclick="window._sortTable('semester')" title="Ordenar por semestre">Semestre <span class="sort-arrow">↕</span></th>
+            <th id="th-semester" class="th-sort" data-sort="semester" title="Ordenar por semestre">Semestre <span class="sort-arrow">↕</span></th>
             <th>Líneas</th>
-            <th id="th-time" class="th-sort" onclick="window._sortTable('time')" title="Ordenar por disponibilidad">Tiempo <span class="sort-arrow">↕</span></th>
+            <th id="th-time" class="th-sort" data-sort="time" title="Ordenar por disponibilidad">Tiempo <span class="sort-arrow">↕</span></th>
             <th>Eventos</th>
             <th>Experiencia</th>
             <th>Temas</th>
-            <th id="th-skills" class="th-sort" onclick="window._sortTable('skills')" title="Ordenar por nº habilidades">Skills <span class="sort-arrow">↕</span></th>
+            <th id="th-skills" class="th-sort" data-sort="skills" title="Ordenar por nº habilidades">Skills <span class="sort-arrow">↕</span></th>
           </tr>
         </thead>
         <tbody id="tbl-body"></tbody>
@@ -200,6 +199,7 @@
 </div>
 
 <script src="js/data.js"></script>
+<script src="js/domain.js"></script>
 <script src="js/charts.js"></script>
 <script src="js/app.js"></script>
 <script src="js/analytics.js"></script>

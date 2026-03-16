@@ -345,7 +345,7 @@
       }).join('');
 
       return '<div class="prf-group">' +
-        '<div class="prf-group-header" onclick="window._togglePrfGroup(this)">' +
+        '<div class="prf-group-header">' +
           '<span class="prf-group-icon">' + m.icon + '</span>' +
           '<span class="prf-group-label" style="color:' + m.color + '">' + p + '</span>' +
           '<span class="prf-group-count">' + students.length + ' estudiantes</span>' +
@@ -375,31 +375,24 @@
 
   window.DashboardModules = { updateAll: updateAll };
 
-  // Cambia la plantilla activa sin reconstruir los botones.
-  window._teamBuilderSelect = function (key) {
-    _selectedTemplateKey = key;
-    var container = document.getElementById('mod-team-builder');
-    if (container) {
-      container.querySelectorAll('.team-template-btn').forEach(function (btn) {
-        btn.classList.toggle('active', btn.getAttribute('data-key') === key);
-      });
-    }
-    renderTeamResults('mod-team-builder');
-  };
-
-  // Expande o colapsa un grupo de perfil al hacer clic en su header.
-  window._togglePrfGroup = function (header) {
-    var body   = header.nextElementSibling;
-    var arrow  = header.querySelector('.prf-group-arrow');
-    var isOpen = body.classList.toggle('open');
-    if (arrow) arrow.textContent = isOpen ? '▴' : '▾';
-  };
-
   // Auto-inicialización con RAW al cargar el script.
   // app.js ya ejecutó applyFilters() pero DashboardModules no existía aún.
   // Esta llamada puebla los tres módulos en la primera carga.
   if (window.DashboardData && window.DashboardData.RAW) {
     window.DashboardModules.updateAll(window.DashboardData.RAW);
+  }
+
+  // Delegación: expandir/colapsar grupos de perfil
+  var profilesContainer = document.getElementById('mod-profiles');
+  if (profilesContainer) {
+    profilesContainer.addEventListener('click', function (e) {
+      var header = e.target.closest('.prf-group-header');
+      if (!header) return;
+      var body  = header.nextElementSibling;
+      var arrow = header.querySelector('.prf-group-arrow');
+      var isOpen = body.classList.toggle('open');
+      if (arrow) arrow.textContent = isOpen ? '▴' : '▾';
+    });
   }
 
 })();

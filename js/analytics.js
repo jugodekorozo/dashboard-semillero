@@ -1,5 +1,7 @@
 (function () {
 
+  var D = window.DashboardDomain; // reglas de dominio centralizadas
+
   // Replica privada de count() de charts.js (no expuesta globalmente).
   // Maneja tanto campos escalares como campos array (lines, topics, skills, goals).
   function countField(arr, key) {
@@ -31,11 +33,7 @@
   // disposición eventos: Sí=+2, Tal vez=+1, No=+0
   // habilidades: +1 por cada skill ofrecida
   function profileScore(d) {
-    var score = 0;
-    if (d.time === '1 Hora')              score += 1;
-    else if (d.time === '2 Horas')        score += 2;
-    else if (d.time === '3 Horas')        score += 3;
-    else if (d.time === 'Más de 3 horas') score += 4;
+    var score = D.getTimeRank(d.time);
 
     if (d.previous === 'Sí') score += 3;
 
@@ -85,8 +83,7 @@
   // Distribución fija por semestre (incluye semestres sin registros con 0).
   function getSemesterDistribution(data) {
     var semCount = countField(data, 'semester');
-    var order = ['1', '2', '3', '4', '5', '6', '7', '8', 'Egresado'];
-    return order.reduce(function (acc, sem) {
+    return D.SEMESTER_ORDER.reduce(function (acc, sem) {
       acc[sem] = semCount[sem] || 0;
       return acc;
     }, {});
@@ -95,8 +92,7 @@
   // Núcleo activo: dispuesto a participar (willing=Sí) y tiempo >= 2h.
   function getActiveCore(data) {
     return data.filter(function (d) {
-      return d.willing === 'Sí' &&
-             (d.time === '2 Horas' || d.time === '3 Horas' || d.time === 'Más de 3 horas');
+      return d.willing === 'Sí' && D.getTimeRank(d.time) >= 2;
     });
   }
 
@@ -105,7 +101,7 @@
     return data.filter(function (d) {
       return d.previous === 'Sí' &&
              d.willing  === 'Sí' &&
-             (d.time === '3 Horas' || d.time === 'Más de 3 horas');
+             D.getTimeRank(d.time) >= 3;
     });
   }
 
@@ -127,7 +123,7 @@
   // Alta disponibilidad: time = "3 Horas" o "Más de 3 horas".
   function getHighAvailability(data) {
     return data.filter(function (d) {
-      return d.time === '3 Horas' || d.time === 'Más de 3 horas';
+      return D.getTimeRank(d.time) >= 3;
     });
   }
 
@@ -242,17 +238,14 @@
   // Ordena una copia del array por la clave dada.
   // key: 'score' | 'semester' | 'time' | 'skills'
   // direction: 'asc' | 'desc'
-  var _semOrder  = { '1':1,'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'Egresado':9 };
-  var _timeOrder = { '1 Hora':1,'2 Horas':2,'3 Horas':3,'Más de 3 horas':4 };
-
   function sortStudents(data, key, direction) {
     if (!key) return data;
     return data.slice().sort(function (a, b) {
       var va, vb;
-      if      (key === 'score')    { va = profileScore(a);        vb = profileScore(b); }
-      else if (key === 'semester') { va = _semOrder[a.semester]  || 0; vb = _semOrder[b.semester]  || 0; }
-      else if (key === 'time')     { va = _timeOrder[a.time]     || 0; vb = _timeOrder[b.time]     || 0; }
-      else if (key === 'skills')   { va = a.skills.length;        vb = b.skills.length; }
+      if      (key === 'score')    { va = profileScore(a);             vb = profileScore(b); }
+      else if (key === 'semester') { va = D.getSemesterRank(a.semester); vb = D.getSemesterRank(b.semester); }
+      else if (key === 'time')     { va = D.getTimeRank(a.time);         vb = D.getTimeRank(b.time); }
+      else if (key === 'skills')   { va = a.skills.length;              vb = b.skills.length; }
       else return 0;
       return direction === 'asc' ? va - vb : vb - va;
     });
@@ -267,13 +260,7 @@
 
   // ── CLASIFICACIÓN DE PERFILES ────────────────────────────────────────
 
-  // Habilidades de referencia por categoría
-  var PROFILE_SKILLS = {
-    visual:    ['Ilustración', 'Fotografía', 'Animación', 'Edición de video', 'Motion graphics'],
-    technical: ['Animación', 'Edición de video', 'Motion graphics'],
-    editorial: ['Escritura / Redacción', 'Diseño editorial'],
-    org:       ['Organización de proyectos', 'Manejo de redes sociales', 'Diseño de marcas']
-  };
+  // Grupos de habilidades centralizados en domain.js
 
   // Metadatos visuales de cada perfil (usados en modules.js)
   var PROFILE_META = {
@@ -305,16 +292,16 @@
   //   Productor:         +5 si previous=Sí, +3 si time≥3h, +2 por skill organizativa
   // Empates: prioridad Productor > Conceptual > Técnico > Explorador visual
   function classifyProfile(d) {
-    var tv = _timeOrder[d.time] || 0;
+    var tv = D.getTimeRank(d.time);
 
     function count(list) {
       return list.filter(function (s) { return d.skills.indexOf(s) !== -1; }).length;
     }
 
-    var vC = count(PROFILE_SKILLS.visual);
-    var tC = count(PROFILE_SKILLS.technical);
-    var eC = count(PROFILE_SKILLS.editorial);
-    var oC = count(PROFILE_SKILLS.org);
+    var vC = count(D.VISUAL_SKILLS);
+    var tC = count(D.TECH_SKILLS);
+    var eC = count(D.EDITORIAL_SKILLS);
+    var oC = count(D.ORG_SKILLS);
 
     var scores = {
       'Explorador visual': vC * 3 + (d.topics.length >= 2 ? 1 : 0) + 1,
@@ -445,7 +432,7 @@
 
     // A1 — Disponibilidad limitada (<35% con ≥3h)
     var highTime = data.filter(function (d) {
-      return d.time === '3 Horas' || d.time === 'Más de 3 horas';
+      return D.getTimeRank(d.time) >= 3;
     }).length;
     if (highTime / n < 0.35) {
       insights.push({

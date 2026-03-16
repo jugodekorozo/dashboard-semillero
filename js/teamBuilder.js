@@ -1,24 +1,9 @@
 (function () {
 
   var TEAM_SIZE_DEFAULT = 4;
+  var D = window.DashboardDomain; // reglas de dominio centralizadas
 
   // ── HELPERS ─────────────────────────────────────────────────────────
-
-  // Devuelve un valor numérico para "tiempo disponible"
-  function timeValue(t) {
-    if (t === '1 Hora')              return 1;
-    if (t === '2 Horas')            return 2;
-    if (t === '3 Horas')            return 3;
-    if (t === 'Más de 3 horas')     return 4;
-    return 0;
-  }
-
-  // Semestre como número (Egresado = 9)
-  function semValue(s) {
-    if (s === 'Egresado') return 9;
-    var n = parseInt(s, 10);
-    return isNaN(n) ? 0 : n;
-  }
 
   // Unión de arrays sin duplicados
   function union(a, b) {
@@ -39,15 +24,15 @@
   // ── evaluateTeam ─────────────────────────────────────────────────────
   // Puntuación de equilibrio de un equipo (mayor = más balanceado).
   // Criterios:
-  //   1. Diversidad de semestres (desv. estándar de semValues, menor es mejor → invertida)
+  //   1. Diversidad de semestres (D.getSemesterRank, menor spread = menor diversidad → invertida)
   //   2. Cobertura de skills únicas
-  //   3. Disponibilidad media (timeValue promedio)
+  //   3. Disponibilidad media (D.getTimeRank promedio)
   //   4. Presencia de experiencia previa (bonus por cada miembro con Sí)
   function evaluateTeam(members, allSkills) {
     if (!members.length) return 0;
 
     // 1 — Diversidad de semestres (normalizada 0-1, mayor spread = más diverso)
-    var semVals = members.map(function (m) { return semValue(m.semester); });
+    var semVals = members.map(function (m) { return D.getSemesterRank(m.semester); });
     var semMin = Math.min.apply(null, semVals);
     var semMax = Math.max.apply(null, semVals);
     var semDiversity = members.length > 1 ? (semMax - semMin) / 8 : 0;
@@ -56,7 +41,7 @@
     var skillCoverage = balanceSkills(members, allSkills);
 
     // 3 — Disponibilidad media (escala 1-4 → 0-1)
-    var avgTime = members.reduce(function (s, m) { return s + timeValue(m.time); }, 0) / members.length;
+    var avgTime = members.reduce(function (s, m) { return s + D.getTimeRank(m.time); }, 0) / members.length;
     var timeScore = (avgTime - 1) / 3;
 
     // 4 — Proporción con experiencia previa
@@ -117,14 +102,14 @@
       .map(function (members, i) {
         var combinedSkills    = members.reduce(function (acc, m) { return union(acc, m.skills); }, []).sort();
         var combinedInterests = members.reduce(function (acc, m) { return union(acc, m.topics); }, []).sort();
-        var avgTime = members.reduce(function (s, m) { return s + timeValue(m.time); }, 0) / members.length;
+        var avgTime = members.reduce(function (s, m) { return s + D.getTimeRank(m.time); }, 0) / members.length;
         var expCount = members.filter(function (m) { return m.previous === 'Sí'; }).length;
         var willingYes = members.filter(function (m) { return m.willing === 'Sí'; }).length;
         var score = evaluateTeam(members, allSkills);
 
         // Compatibilidad de disponibilidad (todos tienen ≥ tiempo mínimo del equipo)
-        var minTime = Math.min.apply(null, members.map(function (m) { return timeValue(m.time); }));
-        var compatible = members.every(function (m) { return timeValue(m.time) >= minTime; });
+        var minTime = Math.min.apply(null, members.map(function (m) { return D.getTimeRank(m.time); }));
+        var compatible = members.every(function (m) { return D.getTimeRank(m.time) >= minTime; });
 
         return {
           id:                i + 1,
@@ -232,7 +217,7 @@
     panel.innerHTML =
       '<div class="tb-controls">' +
         '<label class="tb-label">Personas por equipo</label>' +
-        '<select class="tb-size-select" onchange="window._tbSetSize(this.value)">' + sizeOptions + '</select>' +
+        '<select class="tb-size-select">' + sizeOptions + '</select>' +
         '<span class="tb-summary">' + numTeams + ' equipo' + (numTeams !== 1 ? 's' : '') + ' de ' + n + ' inscritos</span>' +
       '</div>' +
       '<div class="tb-grid">' + cardsHtml + '</div>';
@@ -260,17 +245,29 @@
   // ── API PÚBLICA ──────────────────────────────────────────────────────
 
   window.TeamBuilder = {
-    setData:     setData,
-    togglePanel: togglePanel,
+    setData:       setData,
+    togglePanel:   togglePanel,
     generateTeams: generateTeams
   };
 
-  window._tbSetSize = function (val) {
-    var n = parseInt(val, 10);
-    if (n > 1) {
-      _teamSize = n;
-      renderPanel();
-    }
-  };
+  // Wire toggle button
+  var toggleBtn = document.getElementById('team-builder-toggle');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', togglePanel);
+  }
+
+  // Delegación: cambio de tamaño de equipo en el panel
+  var tbPanel = document.getElementById('team-builder-panel');
+  if (tbPanel) {
+    tbPanel.addEventListener('change', function (e) {
+      if (e.target.classList.contains('tb-size-select')) {
+        var n = parseInt(e.target.value, 10);
+        if (n > 1) {
+          _teamSize = n;
+          renderPanel();
+        }
+      }
+    });
+  }
 
 })();

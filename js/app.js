@@ -95,9 +95,9 @@
     fLine.innerHTML = '<option value="">Todas</option>';
     fTime.innerHTML = '<option value="">Todos</option>';
 
+    const SR = window.DashboardDomain.SEMESTER_RANK;
     const sems = [...new Set(RAW.map((d) => d.semester))].sort((a, b) => {
-      const order = { "1": 1, "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, Egresado: 9 };
-      return (order[a] || 0) - (order[b] || 0);
+      return (SR[a] || 0) - (SR[b] || 0);
     });
 
     sems.forEach((s) => {
@@ -178,10 +178,7 @@
     applyFilters();
   }
 
-  window.applyFilters = applyFilters;
-  window.resetFilters = resetFilters;
-
-  window._sortTable = function (key) {
+  function _sortTable(key) {
     if (_sortKey === key) {
       _sortDir = _sortDir === "desc" ? "asc" : "desc";
     } else {
@@ -189,12 +186,7 @@
       _sortDir = "desc";
     }
     applyFilters();
-  };
-
-  window._onSearchInput = function (val) {
-    _searchQuery = val;
-    applyFilters();
-  };
+  }
 
   Chart.defaults.color = "#a8a8a8";
   Chart.defaults.borderColor = "rgba(255,255,255,0.08)";
@@ -202,4 +194,21 @@
 
   populateFilters();
   applyFilters();
+
+  // Wire up event listeners (replaces inline HTML handlers)
+  ["f-semester", "f-line", "f-time", "f-prev", "f-willing"].forEach(function (id) {
+    document.getElementById(id).addEventListener("change", applyFilters);
+  });
+
+  document.getElementById("btn-reset").addEventListener("click", resetFilters);
+
+  document.getElementById("student-search").addEventListener("input", function () {
+    _searchQuery = this.value;
+    applyFilters();
+  });
+
+  document.getElementById("tbl").querySelector("thead").addEventListener("click", function (e) {
+    var th = e.target.closest(".th-sort[data-sort]");
+    if (th) _sortTable(th.getAttribute("data-sort"));
+  });
 })();
