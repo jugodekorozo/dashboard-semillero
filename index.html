@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard – Semillero de Investigación</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">🔬</div>
+  <div>
+    <h1>Semillero de Investigación — Cuadro de Mando</h1>
+    <p>Preinscripciones · Fundación Universitaria del Área Andina</p>
+  </div>
+  <div class="header-right">
+    <div><span class="badge" id="total-badge">53</span> inscritos totales</div>
+    <div style="margin-top:4px">5 de marzo de 2026</div>
+  </div>
+</div>
+
+<div class="filters">
+  <div>
+    <label>Semestre</label>
+    <select id="f-semester" onchange="applyFilters()">
+      <option value="">Todos</option>
+    </select>
+  </div>
+  <div>
+    <label>Línea de énfasis</label>
+    <select id="f-line" onchange="applyFilters()">
+      <option value="">Todas</option>
+    </select>
+  </div>
+  <div>
+    <label>Tiempo disponible</label>
+    <select id="f-time" onchange="applyFilters()">
+      <option value="">Todos</option>
+    </select>
+  </div>
+  <div>
+    <label>Experiencia previa</label>
+    <select id="f-prev" onchange="applyFilters()">
+      <option value="">Todos</option>
+      <option value="Sí">Con experiencia</option>
+      <option value="No">Sin experiencia</option>
+    </select>
+  </div>
+  <div>
+    <label>Participación eventos</label>
+    <select id="f-willing" onchange="applyFilters()">
+      <option value="">Todos</option>
+      <option value="Sí">Sí</option>
+      <option value="No">No</option>
+      <option value="Tal vez">Tal vez</option>
+    </select>
+  </div>
+  <button class="btn-reset" onclick="resetFilters()">↺ Limpiar filtros</button>
+  <span id="result-count"></span>
+</div>
+
+<div class="main">
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-val c1" id="k-total">53</div><div class="kpi-lbl">Total inscritos</div></div>
+    <div class="kpi"><div class="kpi-val c2" id="k-exp">—</div><div class="kpi-lbl">Con experiencia previa</div><div class="kpi-sub" id="k-exp-pct"></div></div>
+    <div class="kpi"><div class="kpi-val c3" id="k-yes">—</div><div class="kpi-lbl">Dispuestos a participar</div><div class="kpi-sub" id="k-yes-pct"></div></div>
+    <div class="kpi"><div class="kpi-val c4" id="k-more3">—</div><div class="kpi-lbl">+3 horas/semana</div><div class="kpi-sub" id="k-more3-pct"></div></div>
+    <div class="kpi"><div class="kpi-val c5" id="k-grad">—</div><div class="kpi-lbl">Egresados</div></div>
+    <div class="kpi"><div class="kpi-val c6" id="k-sem8">—</div><div class="kpi-lbl">Semestre 8</div><div class="kpi-sub">(próximos a grado)</div></div>
+  </div>
+
+  <!-- Row 1: 3 charts -->
+  <div class="chart-grid">
+    <div class="card">
+      <div class="card-title"><span class="dot dot-1"></span>Inscritos por semestre</div>
+      <canvas id="ch-semester"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot dot-2"></span>Líneas de énfasis</div>
+      <canvas id="ch-lines"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot dot-3"></span>Tiempo disponible semanal</div>
+      <canvas id="ch-time"></canvas>
+    </div>
+  </div>
+
+  <!-- Row 2: 2 charts -->
+  <div class="chart-grid-2">
+    <div class="card">
+      <div class="card-title"><span class="dot dot-4"></span>Temas de investigación de interés</div>
+      <canvas id="ch-topics" style="max-height:260px"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot dot-5"></span>Habilidades ofrecidas</div>
+      <canvas id="ch-skills" style="max-height:260px"></canvas>
+    </div>
+  </div>
+
+  <!-- Row 3: 3 charts -->
+  <div class="chart-grid">
+    <div class="card">
+      <div class="card-title"><span class="dot dot-6"></span>Disposición a eventos académicos</div>
+      <canvas id="ch-willing"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot dot-7"></span>Experiencia previa en semilleros</div>
+      <canvas id="ch-prev"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot dot-8"></span>Objetivos de participación</div>
+      <canvas id="ch-goals" style="max-height:220px"></canvas>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="section-title">Detalle de inscritos</div>
+  <div class="card-table">
+    <div class="table-wrap">
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Nombre</th>
+            <th>Semestre</th>
+            <th>Líneas</th>
+            <th>Tiempo</th>
+            <th>Eventos</th>
+            <th>Experiencia</th>
+            <th>Temas</th>
+          </tr>
+        </thead>
+        <tbody id="tbl-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
