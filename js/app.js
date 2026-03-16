@@ -1,11 +1,18 @@
 (function () {
   const { RAW, PALETTE } = window.DashboardData;
-  let filtered = [...RAW];
 
-  // Estado de búsqueda y sorting (persiste entre cambios de filtro)
-  let _searchQuery = '';
-  let _sortKey     = null;   // null = sin ordenar
-  let _sortDir     = 'desc';
+  // ── Estado compartido ────────────────────────────────────────────────
+  // Expuesto en window para que módulos externos puedan leerlo (solo lectura).
+  // app.js es el único escritor; el resto observa pero nunca muta.
+  window.DashboardState = {
+    raw:           RAW,          // referencia inmutable al dataset completo
+    filtered:      RAW.slice(),  // subconjunto activo tras aplicar filtros de dropdown
+    searchQuery:   '',           // texto de búsqueda en la tabla
+    sortKey:       null,         // columna activa de sorting (null = sin ordenar)
+    sortDirection: 'desc'        // 'asc' | 'desc'
+  };
+
+  const S = window.DashboardState; // alias local para escritura concisa
 
   function pct(n, total) {
     if (!total) return "0%";
@@ -127,7 +134,7 @@
   function _updateSearchCount(shown, total) {
     const el = document.getElementById("search-count");
     if (!el) return;
-    el.textContent = _searchQuery
+    el.textContent = S.searchQuery
       ? shown + " resultado" + (shown !== 1 ? "s" : "") + " de " + total
       : "";
   }
@@ -137,38 +144,38 @@
       const el = document.getElementById("th-" + key);
       if (!el) return;
       const arrow = el.querySelector(".sort-arrow");
-      if (arrow) arrow.textContent = _sortKey === key ? (_sortDir === "asc" ? "↑" : "↓") : "↕";
-      el.classList.toggle("th-active", _sortKey === key);
+      if (arrow) arrow.textContent = S.sortKey === key ? (S.sortDirection === "asc" ? "↑" : "↓") : "↕";
+      el.classList.toggle("th-active", S.sortKey === key);
     });
   }
 
   function applyFilters() {
-    const sem = document.getElementById("f-semester").value;
+    const sem  = document.getElementById("f-semester").value;
     const line = document.getElementById("f-line").value;
     const time = document.getElementById("f-time").value;
     const prev = document.getElementById("f-prev").value;
     const will = document.getElementById("f-willing").value;
 
-    filtered = RAW.filter(
+    S.filtered = RAW.filter(
       (d) =>
-        (!sem || d.semester === sem) &&
+        (!sem  || d.semester === sem) &&
         (!line || d.lines.includes(line)) &&
         (!time || d.time === time) &&
         (!prev || d.previous === prev) &&
         (!will || d.willing === will)
     );
 
-    // Búsqueda y sorting se aplican solo a la tabla; KPIs y gráficos usan filtered completo
+    // Búsqueda y sorting se aplican solo a la tabla; KPIs y gráficos usan S.filtered completo
     const A = window.DashboardAnalytics;
-    const searched = (_searchQuery && A) ? A.searchStudents(filtered, _searchQuery) : filtered;
-    const display  = (_sortKey && A)     ? A.sortStudents(searched, _sortKey, _sortDir)  : searched;
+    const searched = (S.searchQuery && A) ? A.searchStudents(S.filtered, S.searchQuery) : S.filtered;
+    const display  = (S.sortKey && A)     ? A.sortStudents(searched, S.sortKey, S.sortDirection) : searched;
 
-    updateKPIs(filtered);
-    window.DashboardCharts.updateCharts(filtered, PALETTE, filtered.length);
+    updateKPIs(S.filtered);
+    window.DashboardCharts.updateCharts(S.filtered, PALETTE, S.filtered.length);
     updateTable(display);
-    _updateSearchCount(searched.length, filtered.length);
+    _updateSearchCount(searched.length, S.filtered.length);
     _updateSortHeaders();
-    if (window.DashboardModules) window.DashboardModules.updateAll(filtered);
+    if (window.DashboardModules) window.DashboardModules.updateAll(S.filtered);
   }
 
   function resetFilters() {
@@ -179,11 +186,11 @@
   }
 
   function _sortTable(key) {
-    if (_sortKey === key) {
-      _sortDir = _sortDir === "desc" ? "asc" : "desc";
+    if (S.sortKey === key) {
+      S.sortDirection = S.sortDirection === "desc" ? "asc" : "desc";
     } else {
-      _sortKey = key;
-      _sortDir = "desc";
+      S.sortKey = key;
+      S.sortDirection = "desc";
     }
     applyFilters();
   }
@@ -195,7 +202,7 @@
   populateFilters();
   applyFilters();
 
-  // Wire up event listeners (replaces inline HTML handlers)
+  // Wire up event listeners
   ["f-semester", "f-line", "f-time", "f-prev", "f-willing"].forEach(function (id) {
     document.getElementById(id).addEventListener("change", applyFilters);
   });
@@ -203,7 +210,7 @@
   document.getElementById("btn-reset").addEventListener("click", resetFilters);
 
   document.getElementById("student-search").addEventListener("input", function () {
-    _searchQuery = this.value;
+    S.searchQuery = this.value;
     applyFilters();
   });
 
