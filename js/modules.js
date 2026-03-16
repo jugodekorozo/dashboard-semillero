@@ -2,6 +2,10 @@
 
   var RARE_THRESHOLD = 3;
 
+  // Estado del constructor de equipos (persiste entre actualizaciones de filtros)
+  var _teamData = [];
+  var _selectedTemplateKey = 'editorial';
+
   var typeClass = {
     risk:        'insight-risk',
     warning:     'insight-warning',
@@ -133,15 +137,127 @@
       '<div class="skill-map">' + rows + '</div>';
   }
 
+  // ── CONSTRUCTOR DE EQUIPOS ──────────────────────────────────────────
+
+  // Renderiza solo el área de resultados (sin tocar los botones de plantilla).
+  // Se llama tanto desde renderTeamBuilder como desde window._teamBuilderSelect.
+  function renderTeamResults(containerId) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+    var resultEl = container.querySelector('.team-results');
+    if (!resultEl) return;
+
+    var templates = window.DashboardAnalytics.PROJECT_TEMPLATES;
+    var template  = templates[_selectedTemplateKey];
+    if (!template) return;
+
+    var team = window.DashboardAnalytics.suggestTeam(_teamData, template.skills, template.size);
+
+    if (!team.length) {
+      resultEl.innerHTML = '<div class="mod-empty">Sin datos suficientes para el filtro actual.</div>';
+      return;
+    }
+
+    var maxScore = team.reduce(function (mx, m) { return Math.max(mx, m.score); }, 0);
+
+    var requiredHtml =
+      '<div class="team-required">' +
+        '<span class="team-required-label">Habilidades buscadas:</span>' +
+        template.skills.map(function (s) {
+          return '<span class="pill pill-topic">' + s + '</span>';
+        }).join('') +
+      '</div>';
+
+    var cardsHtml = team.map(function (m) {
+      var barPct    = maxScore > 0 ? Math.round(m.score / maxScore * 100) : 0;
+      var semLabel  = m.semester === 'Egresado' ? 'Egres.' : 'Sem.' + m.semester;
+      var badgeCls  = m.matchCount === template.skills.length ? 'match-full'
+                    : m.matchCount > 0                        ? 'match-partial'
+                    :                                           'match-none';
+      var matchLabel = m.matchCount + '/' + template.skills.length;
+      var expPill    = m.previous === 'Sí' ? '<span class="pill pill-green">Exp.</span>' : '';
+
+      var matchedHtml = m.matchedSkills.length
+        ? '<div class="match-skills">' +
+            m.matchedSkills.map(function (s) {
+              return '<span class="match-skill-tag">' + s + '</span>';
+            }).join('') +
+          '</div>'
+        : '';
+
+      return '<div class="team-member-card">' +
+        '<div class="team-member-header">' +
+          '<div class="team-member-info">' +
+            '<div class="team-member-name">' + m.name + '</div>' +
+            '<div class="team-member-meta">' +
+              '<span class="pill">' + semLabel + '</span>' +
+              '<span class="pill">' + (timeShort[m.time] || m.time) + '</span>' +
+              expPill +
+            '</div>' +
+          '</div>' +
+          '<span class="match-badge ' + badgeCls + '">' + matchLabel + '</span>' +
+        '</div>' +
+        matchedHtml +
+        '<div class="team-reason">' + m.reason + '</div>' +
+        '<div class="profile-score-bar" style="margin-top:8px">' +
+          '<div class="profile-score-fill" style="width:' + barPct + '%"></div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    resultEl.innerHTML = requiredHtml + '<div class="team-grid">' + cardsHtml + '</div>';
+  }
+
+  // Renderiza el widget completo (plantillas + resultados).
+  // Preserva _selectedTemplateKey entre llamadas de updateAll.
+  function renderTeamBuilder(containerId, data) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+
+    _teamData = data;
+
+    var templates = window.DashboardAnalytics.PROJECT_TEMPLATES;
+    var keys = Object.keys(templates);
+
+    var btnHtml = keys.map(function (key) {
+      var tpl = templates[key];
+      var cls = 'team-template-btn' + (key === _selectedTemplateKey ? ' active' : '');
+      return '<button class="' + cls + '" data-key="' + key + '" ' +
+        'onclick="window._teamBuilderSelect(\'' + key + '\')">' +
+        tpl.icon + ' ' + tpl.label +
+      '</button>';
+    }).join('');
+
+    container.innerHTML =
+      '<div class="card-title">Constructor de equipos</div>' +
+      '<div class="team-templates">' + btnHtml + '</div>' +
+      '<div class="team-results"></div>';
+
+    renderTeamResults(containerId);
+  }
+
   // ── API PÚBLICA ─────────────────────────────────────────────────────
 
   function updateAll(data) {
     renderInsights('mod-insights', data);
     renderProfileRanking('mod-ranking', data);
     renderSkillMap('mod-skills', data);
+    if (window.TeamBuilder) window.TeamBuilder.setData(data);
   }
 
   window.DashboardModules = { updateAll: updateAll };
+
+  // Cambia la plantilla activa sin reconstruir los botones.
+  window._teamBuilderSelect = function (key) {
+    _selectedTemplateKey = key;
+    var container = document.getElementById('mod-team-builder');
+    if (container) {
+      container.querySelectorAll('.team-template-btn').forEach(function (btn) {
+        btn.classList.toggle('active', btn.getAttribute('data-key') === key);
+      });
+    }
+    renderTeamResults('mod-team-builder');
+  };
 
   // Auto-inicialización con RAW al cargar el script.
   // app.js ya ejecutó applyFilters() pero DashboardModules no existía aún.
