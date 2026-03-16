@@ -265,6 +265,94 @@
       .map(function (e) { return { name: e[0], count: e[1] }; });
   }
 
+  // ── CLASIFICACIÓN DE PERFILES ────────────────────────────────────────
+
+  // Habilidades de referencia por categoría
+  var PROFILE_SKILLS = {
+    visual:    ['Ilustración', 'Fotografía', 'Animación', 'Edición de video', 'Motion graphics'],
+    technical: ['Animación', 'Edición de video', 'Motion graphics'],
+    editorial: ['Escritura / Redacción', 'Diseño editorial'],
+    org:       ['Organización de proyectos', 'Manejo de redes sociales', 'Diseño de marcas']
+  };
+
+  // Metadatos visuales de cada perfil (usados en modules.js)
+  var PROFILE_META = {
+    'Explorador visual': {
+      icon: '🎨', color: 'var(--accent-3)', colorRgb: '242,153,46',
+      description: 'Habilidades visuales múltiples y amplia curiosidad temática'
+    },
+    'Técnico': {
+      icon: '⚙', color: 'var(--accent-2)', colorRgb: '231,2,124',
+      description: 'Especialista en producción técnica audiovisual o digital'
+    },
+    'Conceptual': {
+      icon: '📝', color: 'var(--accent)', colorRgb: '110,180,44',
+      description: 'Perfil editorial, redacción e investigación académica'
+    },
+    'Productor': {
+      icon: '⚡', color: '#7b8cde', colorRgb: '123,140,222',
+      description: 'Experiencia previa, alta disponibilidad y capacidad organizativa'
+    }
+  };
+
+  var PROFILES = ['Explorador visual', 'Técnico', 'Conceptual', 'Productor'];
+
+  // Asigna un perfil creativo a un estudiante.
+  // Puntaje por perfil:
+  //   Explorador visual: +3 por skill visual, +1 si ≥2 temas, base +1 (perfil por defecto)
+  //   Técnico:           +4 por skill técnica, +2 si time≥2h
+  //   Conceptual:        +5 por skill editorial, +2 si ≥3 temas de interés
+  //   Productor:         +5 si previous=Sí, +3 si time≥3h, +2 por skill organizativa
+  // Empates: prioridad Productor > Conceptual > Técnico > Explorador visual
+  function classifyProfile(d) {
+    var tv = _timeOrder[d.time] || 0;
+
+    function count(list) {
+      return list.filter(function (s) { return d.skills.indexOf(s) !== -1; }).length;
+    }
+
+    var vC = count(PROFILE_SKILLS.visual);
+    var tC = count(PROFILE_SKILLS.technical);
+    var eC = count(PROFILE_SKILLS.editorial);
+    var oC = count(PROFILE_SKILLS.org);
+
+    var scores = {
+      'Explorador visual': vC * 3 + (d.topics.length >= 2 ? 1 : 0) + 1,
+      'Técnico':           tC * 4 + (tv >= 2 ? 2 : 0),
+      'Conceptual':        eC * 5 + (d.topics.length >= 3 ? 2 : 0),
+      'Productor':         (d.previous === 'Sí' ? 5 : 0) + (tv >= 3 ? 3 : 0) + oC * 2
+    };
+
+    // Recorrer en prioridad descendente; reemplazar solo si estrictamente mayor
+    var order = ['Productor', 'Conceptual', 'Técnico', 'Explorador visual'];
+    var best = order[0];
+    for (var i = 1; i < order.length; i++) {
+      if (scores[order[i]] > scores[best]) best = order[i];
+    }
+
+    return { profile: best, score: scores[best], scores: scores };
+  }
+
+  // Conteo de estudiantes por perfil: { 'Explorador visual': N, ... }
+  function getProfileDistribution(data) {
+    var counts = {};
+    PROFILES.forEach(function (p) { counts[p] = 0; });
+    data.forEach(function (d) {
+      counts[classifyProfile(d).profile]++;
+    });
+    return counts;
+  }
+
+  // Estudiantes agrupados por perfil: { 'Explorador visual': [...], ... }
+  function getStudentsByProfile(data) {
+    var groups = {};
+    PROFILES.forEach(function (p) { groups[p] = []; });
+    data.forEach(function (d) {
+      groups[classifyProfile(d).profile].push(d);
+    });
+    return groups;
+  }
+
   // Array de [skill, count] donde count <= threshold, ordenado asc por count.
   // Con los 53 registros completos devuelve [] (ninguna skill llega a ≤3).
   // Aparece con subconjuntos filtrados pequeños.
@@ -402,10 +490,15 @@
     searchStudents:      searchStudents,
     sortStudents:        sortStudents,
     getScarceSkills:     getScarceSkills,
-    rareSkills:          rareSkills,
-    generateInsights:    generateInsights,
-    PROJECT_TEMPLATES:   PROJECT_TEMPLATES,
-    suggestTeam:         suggestTeam
+    classifyProfile:        classifyProfile,
+    getProfileDistribution: getProfileDistribution,
+    getStudentsByProfile:   getStudentsByProfile,
+    PROFILES:               PROFILES,
+    PROFILE_META:           PROFILE_META,
+    rareSkills:             rareSkills,
+    generateInsights:       generateInsights,
+    PROJECT_TEMPLATES:      PROJECT_TEMPLATES,
+    suggestTeam:            suggestTeam
   };
 
 })();

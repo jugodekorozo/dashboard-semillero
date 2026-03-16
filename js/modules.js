@@ -289,6 +289,78 @@
     renderTopList(containerId, 'Top 5 intereses', items, null);
   }
 
+  // ── PERFILES DEL SEMILLERO ──────────────────────────────────────────
+
+  function renderProfiles(containerId, data) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+
+    var A = window.DashboardAnalytics;
+    if (!A) { container.innerHTML = ''; return; }
+
+    if (!data.length) {
+      container.innerHTML = '<div class="card-title">Perfiles del Semillero</div><div class="mod-empty">Sin datos para el filtro actual.</div>';
+      return;
+    }
+
+    var dist   = A.getProfileDistribution(data);
+    var groups = A.getStudentsByProfile(data);
+    var meta   = A.PROFILE_META;
+    var profs  = A.PROFILES;
+    var total  = data.length;
+    var maxCount = Math.max.apply(null, profs.map(function (p) { return dist[p]; }));
+
+    // ── Tarjetas resumen ────────────────────────────────────────────
+    var cardsHtml = profs.map(function (p) {
+      var m      = meta[p];
+      var count  = dist[p];
+      var pct    = total > 0 ? Math.round(count / total * 100) : 0;
+      var barPct = maxCount > 0 ? Math.round(count / maxCount * 100) : 0;
+
+      return '<div class="prf-card">' +
+        '<div class="prf-card-header">' +
+          '<span class="prf-card-icon">' + m.icon + '</span>' +
+          '<span class="prf-card-name">' + p + '</span>' +
+        '</div>' +
+        '<div class="prf-card-count" style="color:' + m.color + '">' + count + '</div>' +
+        '<div class="prf-card-pct">' + pct + '% del grupo</div>' +
+        '<div class="prf-bar-wrap">' +
+          '<div class="prf-bar-fill" style="width:' + barPct + '%;background:rgba(' + m.colorRgb + ',0.75)"></div>' +
+        '</div>' +
+        '<div class="prf-card-desc">' + m.description + '</div>' +
+      '</div>';
+    }).join('');
+
+    // ── Listas colapsables por perfil ───────────────────────────────
+    var groupsHtml = profs.map(function (p) {
+      var students = groups[p];
+      if (!students.length) return '';
+      var m = meta[p];
+
+      var pillsHtml = students.map(function (s) {
+        return '<span class="prf-student-pill" ' +
+          'style="border-color:rgba(' + m.colorRgb + ',0.4)">' +
+          s.name.split(' ').slice(0, 2).join(' ') +
+        '</span>';
+      }).join('');
+
+      return '<div class="prf-group">' +
+        '<div class="prf-group-header" onclick="window._togglePrfGroup(this)">' +
+          '<span class="prf-group-icon">' + m.icon + '</span>' +
+          '<span class="prf-group-label" style="color:' + m.color + '">' + p + '</span>' +
+          '<span class="prf-group-count">' + students.length + ' estudiantes</span>' +
+          '<span class="prf-group-arrow">▾</span>' +
+        '</div>' +
+        '<div class="prf-group-body">' + pillsHtml + '</div>' +
+      '</div>';
+    }).join('');
+
+    container.innerHTML =
+      '<div class="card-title">Perfiles del Semillero</div>' +
+      '<div class="prf-cards-grid">' + cardsHtml + '</div>' +
+      '<div class="prf-groups">' + groupsHtml + '</div>';
+  }
+
   // ── API PÚBLICA ─────────────────────────────────────────────────────
 
   function updateAll(data) {
@@ -297,6 +369,7 @@
     renderSkillMap('mod-skills', data);
     renderTopSkills('mod-top-skills', data);
     renderTopInterests('mod-top-interests', data);
+    renderProfiles('mod-profiles', data);
     if (window.TeamBuilder) window.TeamBuilder.setData(data);
   }
 
@@ -312,6 +385,14 @@
       });
     }
     renderTeamResults('mod-team-builder');
+  };
+
+  // Expande o colapsa un grupo de perfil al hacer clic en su header.
+  window._togglePrfGroup = function (header) {
+    var body   = header.nextElementSibling;
+    var arrow  = header.querySelector('.prf-group-arrow');
+    var isOpen = body.classList.toggle('open');
+    if (arrow) arrow.textContent = isOpen ? '▴' : '▾';
   };
 
   // Auto-inicialización con RAW al cargar el script.

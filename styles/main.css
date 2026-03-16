@@ -1088,3 +1088,147 @@ tr:hover td { background: rgba(255, 255, 255, 0.04); }
   .top-label { width: 120px; min-width: 120px; }
   .search-input { max-width: 100%; }
 }
+
+/* ── Perfiles del Semillero ────────────────────────────────────────── */
+
+.prf-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.prf-card {
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.prf-card-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.prf-card-icon { font-size: 18px; line-height: 1; }
+
+.prf-card-name {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text);
+}
+
+.prf-card-count {
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.prf-card-pct {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.prf-bar-wrap {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 2px 0;
+}
+
+.prf-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.prf-card-desc {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+/* Grupos colapsables */
+.prf-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.prf-group {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.prf-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+
+.prf-group-header:hover { background: var(--surface-hover); }
+
+.prf-group-icon  { font-size: 15px; }
+
+.prf-group-label {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.prf-group-count {
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: 2px;
+}
+
+.prf-group-arrow {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--muted);
+  transition: transform 0.2s;
+}
+
+.prf-group-body {
+  display: none;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 12px 14px;
+  background: rgba(0, 0, 0, 0.18);
+  border-top: 1px solid var(--border);
+}
+
+.prf-group-body.open { display: flex; }
+
+.prf-student-pill {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  white-space: nowrap;
+  transition: border-color 0.2s;
+}
+
+@media (max-width: 1200px) {
+  .prf-cards-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 700px) {
+  .prf-cards-grid { grid-template-columns: 1fr 1fr; }
+}
