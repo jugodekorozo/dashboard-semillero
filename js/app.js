@@ -120,6 +120,7 @@
     updateKPIs(filtered);
     window.DashboardCharts.updateCharts(filtered, PALETTE, filtered.length);
     updateTable(filtered);
+    if (window.DashboardModules) window.DashboardModules.updateAll(filtered);
   }
 
   function resetFilters() {
